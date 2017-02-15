@@ -15,14 +15,14 @@ struct color {
 };
 
 struct time {
-    unsigned int hours;
-    unsigned int minutes;
-    unsigned int seconds;
+    int hours;
+    int minutes;
+    int seconds;
 };
 
 struct color colors[] =
 {
-                     {1, 1, 1},         // Off
+                     {1, 2, 3},         // Off
                      {255, 1, 2},       // Red
                      {1, 255, 2},       // Green
                      {200, 201, 202},   // White
@@ -36,14 +36,14 @@ struct color colors[] =
                      {64, 5, 75},       // Purple
 };
 
-struct time currentTime = {12, 0, 0};
+struct time currentTime = {7, 0, 0};
 
 
 void InitializeLEDs(void)
 {
     P1DIR |= BIT0;
     SelectPortFunction(1,0,0,0);
-    P1OUT |= BIT1;
+    P1OUT |= BIT0;
 
     P2DIR |= (BIT0|BIT1|BIT2);
     SelectPortFunction(2,0,0,0);
@@ -86,19 +86,15 @@ void PortOneInterrupt(void)
 {
     unsigned short iflag = P1IV;
 
-    P1OUT ^= BIT0;
+    //P1OUT ^= BIT0;
 }
 
-void updateTime(void)
+void updateTime(int cycleCounter)
 {
-    static int cycleCounter = 0;
 
-    ++cycleCounter;
     if (cycleCounter >= 1000)
     {
         currentTime.seconds += 1;
-        cycleCounter = 0;
-        //setColor(currentTime.seconds);
     }
 
     if (currentTime.seconds >= 60)
@@ -119,11 +115,45 @@ void updateTime(void)
     }
 }
 
+void hourDisplayHandler(int cycleCounter)
+{
+    static int blinkCounter = 0;
+
+    // Display the hour every 10 seconds.
+    // At 2 blinks per second, this takes at most 6 seconds.
+    if (currentTime.seconds % 10 == 0)
+    {
+        blinkCounter = 0;
+    }
+    else
+    {
+        // These if blocks could be combined, but are left alone
+            // in favor of code readability.
+        if ((cycleCounter == 250 || cycleCounter == 750) && (blinkCounter < currentTime.hours))
+        {
+            P1OUT |= BIT0;
+        }
+        else if (cycleCounter == 500 || cycleCounter == 999)
+        {
+            P1OUT &= ~BIT0;
+            ++blinkCounter;
+        }
+    }
+
+}
+
 void TimerA0Interrupt(void)
 {
+    static int cycleCounter = 0;
     unsigned int intv = TA0IV;
 
-    updateTime();
+    ++cycleCounter;
+
+    updateTime(cycleCounter);
+    hourDisplayHandler(cycleCounter);
+
+    if (cycleCounter >= 1000)
+        cycleCounter = 0;
 
     switch (intv)
     {
@@ -151,7 +181,7 @@ void main(void)
     InitializeLEDs();
     SetClockFrequency();
     ConfigureTimerMode0();
-    setColor(7);
+    setColor(0);
 
     // Interrupt Stuff
     P1IE = (BIT1|BIT4);
