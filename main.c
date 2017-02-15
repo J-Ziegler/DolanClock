@@ -76,9 +76,9 @@ void ConfigureTimerMode0(void)
     TA0CTL = 0x0156; // Configure/Reset the Timer. Currently set to 64kHz
 }
 
-void setColor(unsigned int i)
+void minuteDisplayHandler()
 {
-    struct color c = colors[i % 12];
+    struct color c = colors[currentTime.minutes / 5];
     TA0CCR1 = c.red;
     TA0CCR2 = c.green;
     TA0CCR3 = c.blue;
@@ -89,25 +89,20 @@ void PortOneInterrupt(void)
     unsigned short iflag = P1IV;
     if(iflag == 04)                      // P1.1
     {
-        if(mode < 2)
-            ++mode;
-        else if(mode == 2)
-            mode=0;
+        ++mode;
+        mode %= 3;
     }
     else if(iflag == 0x000A)            // P1.4
     {
         if (mode == 1)
         {
-            P1OUT&=~BIT0;
-            P2OUT&=~(BIT2|BIT1|BIT0);
+            P1OUT |= BIT0;
             currentTime.hours +=1;
-            P1OUT|=BIT0;
         }
         if(mode == 2)
         {
-            P1OUT&=~BIT0;
-            P2OUT&=~(BIT2|BIT1|BIT0);
-            currentTime.minutes +=5;
+            P1OUT |= BIT0;
+            currentTime.minutes += 5;
         }
     }
 }
@@ -192,6 +187,7 @@ void TimerA0Interrupt(void)
 
     updateTime(cycleCounter);
     hourDisplayHandler(cycleCounter);
+    minuteDisplayHandler();
 
     if (cycleCounter >= 1000)
         cycleCounter = 0;
@@ -224,7 +220,6 @@ void main(void)
     ConfigureTimerMode0();
     InitializePushButton(1);
     InitializePushButton(4);
-    setColor(0);
 
     // Interrupt Stuff
     P1IE = (BIT1|BIT4);
