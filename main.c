@@ -8,6 +8,8 @@
 #include "portfunc.h"
 #include "clock.h"
 
+short mode=0;
+
 struct color {
     unsigned int red;
     unsigned int green;
@@ -85,8 +87,29 @@ void setColor(unsigned int i)
 void PortOneInterrupt(void)
 {
     unsigned short iflag = P1IV;
-
-    //P1OUT ^= BIT0;
+    if(iflag == 04)                      // P1.1
+    {
+        if(mode < 2)
+            ++mode;
+        else if(mode == 2)
+            mode=0;
+    }
+    else if(iflag == 0x000A)            // P1.4
+    {
+        if (mode == 1)
+        {
+            P1OUT&=~BIT0;
+            P2OUT&=~(BIT2|BIT1|BIT0);
+            currentTime.hours +=1;
+            P1OUT|=BIT0;
+        }
+        if(mode == 2)
+        {
+            P1OUT&=~BIT0;
+            P2OUT&=~(BIT2|BIT1|BIT0);
+            currentTime.minutes +=5;
+        }
+    }
 }
 
 void updateTime(int cycleCounter)
@@ -142,6 +165,24 @@ void hourDisplayHandler(int cycleCounter)
 
 }
 
+void InitializePushButton(int var)
+{
+    P2DIR=~BIT(var);
+    P1REN|=BIT(var);
+    P1OUT|=BIT(var);
+    if(P1SEL0&BIT(var))
+    {
+        if(P1SEL1&BIT(var))
+            P1SELC|=BIT(var);
+        else
+            P1SEL0&=~BIT(var);
+    }
+    else if (P1SEL1&BIT(var))
+        P1SEL0&=~BIT(var);
+    else if(P1SEL1&BIT(var))
+        P1SEL1&=~BIT(var);
+}
+
 void TimerA0Interrupt(void)
 {
     static int cycleCounter = 0;
@@ -181,6 +222,8 @@ void main(void)
     InitializeLEDs();
     SetClockFrequency();
     ConfigureTimerMode0();
+    InitializePushButton(1);
+    InitializePushButton(4);
     setColor(0);
 
     // Interrupt Stuff
