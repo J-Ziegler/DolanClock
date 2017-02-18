@@ -4,6 +4,24 @@
 //
 //****************************************************************************
 
+/*
+ * USAGE INSTRUCTIONS:
+ * The clock will blink the hours on the Red LED every 10 seconds.
+ * The color of the RGB LED reflects the minutes in 5 minute intervals.
+ * The clock is initially set to midnight and runs on a 12 hour timer.
+ *
+ * The left button (1.1) changes the mode. The modes are:
+ * 1. Clock
+ * 2. Set Hours
+ * 3. Set Minutes
+ *
+ * When in the second and third modes, the right button (1.4) is used to
+ * increment the hours by 1, or minutes by 5.
+ *
+ * Any additional files can be found at https://github.com/J-Ziegler/DolanClock
+ */
+
+
 #include "msp.h"
 #include "portfunc.h"
 #include "clock.h"
